@@ -3,6 +3,7 @@
 #include <SendOnlySoftwareSerial.h>
 
 #include "PS2.h"
+#include "WavTrigger.h"
 
 //---------------------------------------------------------------------------------
 // PS2 DECLARATIONS
@@ -14,6 +15,7 @@ PS2 ps2 = PS2();
 //---------------------------------------------------------------------------------
 #define WAV_PIN 6
 SendOnlySoftwareSerial wavSerial(WAV_PIN);
+WavTrigger wavTrigger(&wavSerial);
 byte masterVolume;
 bool enteringWavCode;
 
@@ -59,11 +61,11 @@ void wavTriggerSetup() {
     delay(2000);
 
     // turn off the onboard amp
-    //wavTrigger.ampPower(false);
+    wavTrigger.ampPower(false);
 
     // set the master volume
     masterVolume = 150;
-    //wavTrigger.setMasterVolume(masterVolume);
+    wavTrigger.setMasterVolume(masterVolume);
 
     // set the flag for entering the wav code from the controller
     enteringWavCode = false;
