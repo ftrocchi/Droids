@@ -14,10 +14,16 @@ PS2 ps2 = PS2();
 // WAVTRIGGER DECLARATIONS
 //---------------------------------------------------------------------------------
 #define WAV_PIN 6
+#define WAV_RANDOM_MILLISECONDS 20000
+#define WAV_STARTUP 138
+#define WAV_NOTOUCH 139
 SendOnlySoftwareSerial wavSerial(WAV_PIN);
 WavTrigger wavTrigger(&wavSerial);
 byte masterVolume;
 bool enteringWavCode;
+bool isWavRandomOn;
+unsigned long wavLastTimeCheck;
+byte wavCode;
 
 //---------------------------------------------------------------------------------
 // SETUP AND LOOP
@@ -33,6 +39,9 @@ void setup() {
 
     // setup the wav trigger
     wavTriggerSetup();
+
+    // play the startup sound
+    wavCode = WAV_STARTUP;
 }
 
 void loop() {
@@ -71,9 +80,77 @@ void wavTriggerSetup() {
     enteringWavCode = false;
 }
 
-void processWavTrigger() {
-    // TODO
-    
+void processWavTrigger()
+{
+    // play a random sound if we should
+    if (isWavRandomOn) {
+        // check if it is time to play
+        unsigned long timeNow = millis();
+
+        if (timeNow - wavLastTimeCheck > WAV_RANDOM_MILLISECONDS) {
+            // time to play
+            wavLastTimeCheck = timeNow;
+
+            // generate a random number
+            int trackToPlay = random(40) + 13;
+
+            // play it
+            wavTrigger.trackPlaySolo(trackToPlay);
+        }
+    }
+
+    if (ps2.isButtonJustPressed(PS2_STATE_R1)) {
+        enteringWavCode = true;
+        wavCode = 0;
+    }
+
+    if (enteringWavCode) {
+        // use bit shifting to bring in the code
+        if (ps2.isButtonJustPressed(PS2_STATE_CROSS))
+            wavCode = wavCode << 2;
+
+        if (ps2.isButtonJustPressed(PS2_STATE_CIRCLE)) {
+            wavCode = wavCode << 2;
+            wavCode += 1;
+        }
+
+        if (ps2.isButtonJustPressed(PS2_STATE_TRIANGLE)) {
+            wavCode = wavCode << 2;
+            wavCode += 2;
+        }
+
+        if (ps2.isButtonJustPressed(PS2_STATE_SQUARE)) {
+            wavCode = wavCode << 2;
+            wavCode += 3;
+        }
+    }
+
+    if (ps2.isButtonJustReleased(PS2_STATE_R1)) {
+        enteringWavCode = false;
+
+        if (wavCode == 0)
+            wavTrigger.stopAllTracks();
+
+        // play it here!
+        wavTrigger.trackPlaySolo(wavCode);
+    }
+
+    if (ps2.isButtonPressed(PS2_STATE_PAD_UP) && masterVolume < 250) {
+        masterVolume += 5;
+        wavTrigger.setMasterVolume(masterVolume);
+    }
+    else  if (ps2.isButtonPressed(PS2_STATE_PAD_DOWN) && masterVolume > 5) {
+        masterVolume -= 5;
+        wavTrigger.setMasterVolume(masterVolume);
+    }
+
+    if (ps2.isButtonJustPressed(PS2_STATE_START))
+        wavTrigger.trackPlaySolo(WAV_NOTOUCH);
+
+    if (ps2.isButtonJustPressed(PS2_STATE_R2)) {
+        isWavRandomOn = !isWavRandomOn;
+        wavLastTimeCheck = millis() - WAV_RANDOM_MILLISECONDS;
+    }
 }
 
 

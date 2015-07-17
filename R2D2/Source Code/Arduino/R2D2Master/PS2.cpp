@@ -50,3 +50,36 @@ void PS2::uart_Send(byte data) {
     ps2Serial->write(data);
 }
 
+bool PS2::getButtonBit(char* state, byte button)
+{
+    if (button > PS2_STATE_SQUARE) 
+        return false;
+        
+    return (state[button / 8] & (1 << button % 8)) == 0;
+}
+
+bool PS2::isButtonPressed(byte button)
+{
+    return getButtonBit(currentState, button);
+}
+
+bool PS2::isButtonReleased(byte button)
+{
+    return !isButtonPressed(button);
+}
+
+bool PS2::isButtonJustPressed(byte button)
+{
+    bool current = getButtonBit(currentState, button);
+    bool previous = getButtonBit(previousState, button);
+    
+    return (current && !previous);
+}
+
+bool PS2::isButtonJustReleased(byte button)
+{
+    bool current = getButtonBit(currentState, button);
+    bool previous = getButtonBit(previousState, button);
+
+    return (!current && previous);    
+}
