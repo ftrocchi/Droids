@@ -1,6 +1,7 @@
 // R2D2Master.ino
 #include <SoftwareSerial.h>
 #include <SendOnlySoftwareSerial.h>
+#include <Sabertooth.h>
 
 #include "PS2.h"
 #include "WavTrigger.h"
@@ -29,7 +30,10 @@ byte wavCode;
 // MOTOR DECLARATIONS
 //---------------------------------------------------------------------------------
 #define MOTOR_PIN 7
+#define FOOT_MOTOR_SPEED_MAX 64 // 64 for 50%, 127 for 100%
 SendOnlySoftwareSerial motorSerial(MOTOR_PIN);
+Sabertooth domeMotor(128, motorSerial);
+Sabertooth footMotor(129, motorSerial);
 
 //---------------------------------------------------------------------------------
 // SETUP AND LOOP
@@ -57,6 +61,12 @@ void loop() {
 
     // Process the audio
     processWavTrigger();
+
+    // Process the dome motor
+    processDomeMotor();
+
+    // Process the foot motor
+    processFootMotor();
 }
 
 //---------------------------------------------------------------------------------
@@ -167,6 +177,25 @@ void motorSetup() {
     motorSerial.begin(9600);
     domeMotor.autobaud();
     footMotor.autobaud();
+}
+
+void processDomeMotor() {
+    int value = ps2.getStickValue(PS2_STATE_LX);
+
+    int mappedValue = map(value, 0, 255, -127, 127);
+
+    if (abs(mappedValue) <= 20)
+        mappedValue = 0;
+
+    domeMotor.motor(mappedValue);
+}
+
+void processFootMotor() {
+    int driveValue = map(ps2.getStickValue(PS2_STATE_RX), 0, 255, -FOOT_MOTOR_SPEED_MAX, FOOT_MOTOR_SPEED_MAX);
+    int turnValue = map(ps2.getStickValue(PS2_STATE_RY), 0, 255, -FOOT_MOTOR_SPEED_MAX, FOOT_MOTOR_SPEED_MAX);
+
+    footMotor.drive(driveValue);
+    footMotor.turn(turnValue);
 }
 
 

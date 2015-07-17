@@ -83,3 +83,11 @@ bool PS2::isButtonJustReleased(byte button)
 
     return (!current && previous);    
 }
+
+byte PS2::getStickValue(byte stick) {
+    if (stick != PS2_STATE_RX && stick != PS2_STATE_RY && stick != PS2_STATE_LX && stick != PS2_STATE_LY)
+        return 0;
+
+    return currentState[stick];
+}
+

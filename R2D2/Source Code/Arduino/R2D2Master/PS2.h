@@ -60,6 +60,7 @@ class PS2 {
         bool isButtonReleased(byte button);
         bool isButtonJustPressed(byte button);
         bool isButtonJustReleased(byte button);
+        byte getStickValue(byte stick);
 
     protected:
         SoftwareSerial* ps2Serial;
