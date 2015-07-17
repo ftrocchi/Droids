@@ -26,6 +26,12 @@ unsigned long wavLastTimeCheck;
 byte wavCode;
 
 //---------------------------------------------------------------------------------
+// MOTOR DECLARATIONS
+//---------------------------------------------------------------------------------
+#define MOTOR_PIN 7
+SendOnlySoftwareSerial motorSerial(MOTOR_PIN);
+
+//---------------------------------------------------------------------------------
 // SETUP AND LOOP
 //---------------------------------------------------------------------------------
 void setup() {
@@ -36,6 +42,7 @@ void setup() {
     ps2.init(9600, 8, 9);
 
     // setup the motors
+    motorSetup();
 
     // setup the wav trigger
     wavTriggerSetup();
@@ -151,6 +158,15 @@ void processWavTrigger()
         isWavRandomOn = !isWavRandomOn;
         wavLastTimeCheck = millis() - WAV_RANDOM_MILLISECONDS;
     }
+}
+
+//---------------------------------------------------------------------------------
+// MOTOR METHODS
+//---------------------------------------------------------------------------------
+void motorSetup() {
+    motorSerial.begin(9600);
+    domeMotor.autobaud();
+    footMotor.autobaud();
 }
 
 
