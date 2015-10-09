@@ -2,6 +2,8 @@
 #include <SoftwareSerial.h>
 #include <SendOnlySoftwareSerial.h>
 #include <Sabertooth.h>
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
 
 #include "PS2.h"
 #include "WavTrigger.h"
@@ -27,10 +29,18 @@ unsigned long wavLastTimeCheck;
 byte wavCode;
 
 //---------------------------------------------------------------------------------
+// DOME SERVO DECLARATIONS
+//---------------------------------------------------------------------------------
+bool areDomeServosOpen;
+Adafruit_PWMServoDriver servoDriver = Adafruit_PWMServoDriver(0x40);
+#define ADDRESS_OFFSET 0
+
+//---------------------------------------------------------------------------------
 // MOTOR DECLARATIONS
 //---------------------------------------------------------------------------------
 #define MOTOR_PIN 7
-#define FOOT_MOTOR_SPEED_MAX 64 // 64 for 50%, 127 for 100%
+#define FOOT_MOTOR_SPEED_MAX 127 // 64 for 50%, 127 for 100%
+#define DOME_MOTOR_SPEED_MAX 96
 SendOnlySoftwareSerial motorSerial(MOTOR_PIN);
 Sabertooth domeMotor(128, motorSerial);
 Sabertooth footMotor(129, motorSerial);
@@ -51,6 +61,9 @@ void setup() {
     // setup the wav trigger
     wavTriggerSetup();
 
+    // close the dome servos
+    domeServoSetup();
+
     // play the startup sound
     wavCode = WAV_STARTUP;
 }
@@ -61,6 +74,9 @@ void loop() {
 
     // Process the audio
     processWavTrigger();
+
+    // Process the dome servos
+    processDomeServos();
 
     // Process the dome motor
     processDomeMotor();
@@ -161,13 +177,63 @@ void processWavTrigger()
         wavTrigger.setMasterVolume(masterVolume);
     }
 
-    if (ps2.isButtonJustPressed(PS2_STATE_START))
+    if (ps2.isButtonJustPressed(PS2_STATE_START)) {
         wavTrigger.trackPlaySolo(WAV_NOTOUCH);
+    }
 
     if (ps2.isButtonJustPressed(PS2_STATE_R2)) {
         isWavRandomOn = !isWavRandomOn;
         wavLastTimeCheck = millis() - WAV_RANDOM_MILLISECONDS;
     }
+}
+
+//---------------------------------------------------------------------------------
+// DOME SERVO METHODS
+//---------------------------------------------------------------------------------
+void domeServoSetup() {
+    servoDriver.begin();
+    servoDriver.setPWMFreq(50); 
+    delay(500);
+
+    areDomeServosOpen = true;
+    toggleAllServos();
+}
+
+void processDomeServos() {
+    if (ps2.isButtonJustPressed(PS2_STATE_L1)) {
+        toggleAllServos();
+    }
+}
+
+void toggleAllServos() {
+    if (areDomeServosOpen) {
+        // close all servos
+        servoDriver.setPWM(0, ADDRESS_OFFSET, 350);
+        servoDriver.setPWM(1, ADDRESS_OFFSET, 335);
+        servoDriver.setPWM(2, ADDRESS_OFFSET, 335);
+        servoDriver.setPWM(3, ADDRESS_OFFSET, 315);
+        servoDriver.setPWM(4, ADDRESS_OFFSET, 300);
+        servoDriver.setPWM(5, ADDRESS_OFFSET, 345);
+        servoDriver.setPWM(6, ADDRESS_OFFSET, 350);
+        servoDriver.setPWM(7, ADDRESS_OFFSET, 340);
+        servoDriver.setPWM(8, ADDRESS_OFFSET, 315);
+        servoDriver.setPWM(9, ADDRESS_OFFSET, 300);
+
+    } else {
+        // open all servos
+        servoDriver.setPWM(0, ADDRESS_OFFSET, 240);
+        servoDriver.setPWM(1, ADDRESS_OFFSET, 240);
+        servoDriver.setPWM(2, ADDRESS_OFFSET, 240);
+        servoDriver.setPWM(3, ADDRESS_OFFSET, 240);
+        servoDriver.setPWM(4, ADDRESS_OFFSET, 150);
+        servoDriver.setPWM(5, ADDRESS_OFFSET, 175);
+        servoDriver.setPWM(6, ADDRESS_OFFSET, 205);
+        servoDriver.setPWM(7, ADDRESS_OFFSET, 195);
+        servoDriver.setPWM(8, ADDRESS_OFFSET, 165);
+        servoDriver.setPWM(9, ADDRESS_OFFSET, 160);
+    }
+
+    areDomeServosOpen = !areDomeServosOpen;
 }
 
 //---------------------------------------------------------------------------------
@@ -182,7 +248,7 @@ void motorSetup() {
 void processDomeMotor() {
     int value = ps2.getStickValue(PS2_STATE_LX);
 
-    int mappedValue = map(value, 0, 255, -127, 127);
+    int mappedValue = map(value, 0, 255, -DOME_MOTOR_SPEED_MAX, DOME_MOTOR_SPEED_MAX);
 
     if (abs(mappedValue) <= 20)
         mappedValue = 0;
