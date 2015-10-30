@@ -211,7 +211,7 @@ void toggleAllServos() {
         servoDriver.setPWM(0, ADDRESS_OFFSET, 350);
         servoDriver.setPWM(1, ADDRESS_OFFSET, 335);
         servoDriver.setPWM(2, ADDRESS_OFFSET, 335);
-        servoDriver.setPWM(3, ADDRESS_OFFSET, 315);
+        servoDriver.setPWM(3, ADDRESS_OFFSET, 335);
         servoDriver.setPWM(4, ADDRESS_OFFSET, 300);
         servoDriver.setPWM(5, ADDRESS_OFFSET, 345);
         servoDriver.setPWM(6, ADDRESS_OFFSET, 350);
